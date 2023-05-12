@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    volumes:
+      - db_volume:/var/lib/postgresql/data
+
+  scrapper:
+    build:
+      context: scrapper
+    volumes:
+      - ./scrapper:/home/app/Scrapper
+    depends_on:
+      - db
+
+volumes:
+  db_volume:

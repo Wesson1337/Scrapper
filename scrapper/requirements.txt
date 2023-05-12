@@ -1,0 +1,2 @@
+scrapy==2.9.0
+scrapy-playwright==0.0.26
