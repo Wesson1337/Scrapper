@@ -1,17 +1,22 @@
 import logging
 
 import playwright.async_api
+# import playwright.async_api
 # import time
 
-import requests
+# import requests
 import scrapy
 from scrapy.spiders import Rule
 from scrapy.linkextractors import LinkExtractor
+from scrapy_playwright.page import PageMethod
+
+from ..items import PromoItem
+
 
 # import scrapy
-from scrapy_playwright.page import PageMethod
+# from scrapy_playwright.page import PageMethod
 #
-from ..items import PromoItem
+# from ..items import PromoItem
 
 # logging.getLogger('scrapy-playwright').setLevel(level=logging.WARNING)
 
@@ -61,30 +66,32 @@ from ..items import PromoItem
 
 # class PromoSpider(scrapy.Spider):
 #     name = "promo_spider"
-#
+# 
 #     def start_requests(self):
-#         for i in range(1, 10):
-#             yield scrapy.Request(
-#                 f'https://www.litres.ru/popular/?page={i}',
-#                 callback=self.parse_first
-#             )
-#
+#         yield scrapy.Request(
+#             f'https://www.litres.ru/pages/new_genres/',
+#             callback=self.parse_first
+#         )
+# 
 #     def parse_first(self, response: scrapy.http.response):
-#         for url in response.css('a[data-type="elektronnaya-kniga"]'):
-#             yield scrapy.Request(
-#                 response.urljoin(url.attrib["href"]),
-#                 # meta=dict(
-#                 #     playwright=True,
-#                 #     playwright_page_methods=[
-#                 #         PageMethod("evaluate", "window.scrollBy(0, document.body.scrollHeight)"),
-#                 #         PageMethod("wait_for_selector", 'h1[itemprop="name"]')
-#                 #     ],
-#                 # ),
-#                 callback=self.parse_second
-#             )
-#
+#         for url in response.css('a'):
+#             if url.attrib.get("href") and url.attrib.get("href").startswith("/genre/"):
+#                 for i in range(10):
+# 
+#                     yield scrapy.Request(
+#                         f'{response.urljoin(url.attrib["href"])}?page={i}',
+#                         # meta=dict(
+#                         #     playwright=True,
+#                         #     playwright_page_methods=[
+#                         #         PageMethod("evaluate", "window.scrollBy(0, document.body.scrollHeight)"),
+#                         #         PageMethod("wait_for_selector", 'h1[itemprop="name"]')
+#                         #     ],
+#                         # ),
+#                         callback=self.parse_second
+#                     )
+# 
 #     async def parse_second(self, response: scrapy.http.response):
-#         return {"url": response.url}
+#         pass
 
 
 # class PromoSpider(scrapy.Spider):
@@ -142,13 +149,59 @@ from ..items import PromoItem
 
 
 
-class PromoSpider(scrapy.spiders.CrawlSpider):
-    name = "promo_spider"
-    allowed_domains = ["litres.ru"]
-    start_urls = ["http://www.litres.ru/"]
-    rules = (
-        Rule(LinkExtractor(allow='/book/'), callback="parse_item"),
-    )
+# class PromoSpider(scrapy.spiders.CrawlSpider):
+#     name = "promo_spider"
+#     allowed_domains = ["litres.ru"]
+#     start_urls = ["http://www.litres.ru/"]
+#     rules = (
+#         Rule(LinkExtractor(allow=)),
+#         Rule(LinkExtractor(allow=['/book/', '/audiobook/']), callback="parse_item"),
+#     )
+#
+#     def parse_item(self, response):
+#         yield {"url": response.url}
 
-    def parse_item(self, response):
-        yield {"url": response.url}
+
+
+class PromoSpider(scrapy.Spider):
+    name = "promo_spider"
+
+    def start_requests(self):
+        yield scrapy.Request(
+            'https://reactstorefront.vercel.app/default-channel/en-US/category/records/',
+            meta=dict(
+                playwright=True,
+                playwright_include_page=True,
+                playwright_page_methods=[
+                    PageMethod('wait_for_selector', 'button.relative.text-base')
+        ]
+            ),
+            callback=self.parse_first
+        )
+
+    async def parse_first(self, response: scrapy.http.Response):
+        page: playwright.async_api.Page = response.meta["playwright_page"]
+        while True:
+            button = page.locator('button.relative.text-base')
+            if (await button.count()) == 0:
+                break
+            await button.click()
+            for url in await page.locator('a').all():
+                href = await url.get_attribute('href')
+                if href.startswith('/default-channel/en-US/products/'):
+                    yield scrapy.Request(
+                        response.urljoin(href),
+                        callback=self.parse_item
+                    )
+
+    def parse_item(self, response: scrapy.http.Response):
+        item = PromoItem()
+        item['name'] = response.css('h1[data-testid="productName"]::text').get()
+
+        return item
+
+
+
+
+
+
