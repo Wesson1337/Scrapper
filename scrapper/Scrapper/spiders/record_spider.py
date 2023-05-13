@@ -1,24 +1,9 @@
-import logging
 
 import playwright.async_api
-# import playwright.async_api
-# import time
-
-# import requests
 import scrapy
-from scrapy.spiders import Rule
-from scrapy.linkextractors import LinkExtractor
 from scrapy_playwright.page import PageMethod
 
-from ..items import PromoItem
-
-
-# import scrapy
-# from scrapy_playwright.page import PageMethod
-#
-# from ..items import PromoItem
-
-# logging.getLogger('scrapy-playwright').setLevel(level=logging.WARNING)
+from ..items import RecordItem
 
 
 # class PromoSpider(scrapy.Spider):
@@ -162,9 +147,8 @@ from ..items import PromoItem
 #         yield {"url": response.url}
 
 
-
-class PromoSpider(scrapy.Spider):
-    name = "promo_spider"
+class RecordsSpider(scrapy.Spider):
+    name = "records_spider"
 
     def start_requests(self):
         yield scrapy.Request(
@@ -195,8 +179,26 @@ class PromoSpider(scrapy.Spider):
                     )
 
     def parse_item(self, response: scrapy.http.Response):
-        item = PromoItem()
+        item = RecordItem()
         item['name'] = response.css('h1[data-testid="productName"]::text').get()
+
+        prices = response.css('div.flex.flex-row.gap-2.w-full.font-semibold.text-md>div:nth-child(2)::text').getall()
+        item["cd_price"] = prices[0]
+        item["vinyl_price"] = prices[1]
+
+        attributes = []
+
+        for attribute in response.css('div[class="grid grid-cols-2"]>div:nth-child(even)'):
+            text_of_attribute = ' '.join(attribute.css("p::text").getall())
+            attributes.append(text_of_attribute)
+
+        item["release_type"] = attributes[0]
+        item["artist"] = attributes[1]
+        item["artist_page"] = attributes[2]
+        item["genre"] = attributes[3]
+        item["release_year"] = attributes[4]
+        item["label"] = attributes[5]
+        item["country"] = attributes[6]
 
         return item
 
