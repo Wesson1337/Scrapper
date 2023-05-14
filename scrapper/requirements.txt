@@ -1,2 +1,4 @@
 scrapy==2.9.0
 scrapy-playwright==0.0.26
+sqlalchemy==2.0.13
+psycopg2==2.9.6

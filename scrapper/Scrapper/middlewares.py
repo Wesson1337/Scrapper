@@ -2,11 +2,18 @@
 #
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+import logging
 
 from scrapy import signals
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
+from scrapy.exceptions import IgnoreRequest
+from sqlalchemy.orm import sessionmaker
+import sqlalchemy as sa
+from .models import connect_db, create_table, Record
+
+logger = logging.getLogger(__name__)
 
 
 class RecordScrapperSpiderMiddleware:
@@ -61,6 +68,11 @@ class ScrapperDownloaderMiddleware:
     # scrapy acts as if the downloader middleware does not modify the
     # passed objects.
 
+    def __init__(self):
+        engine = connect_db()
+        create_table(engine)
+        self.Session = sessionmaker(bind=engine)
+
     @classmethod
     def from_crawler(cls, crawler):
         # This method is used by Scrapy to create your spiders.
@@ -78,6 +90,13 @@ class ScrapperDownloaderMiddleware:
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
+
+        session = self.Session()
+        record = session.execute(sa.select(Record).where(Record.url == request.url)).scalar_one_or_none()
+        session.close()
+        if record is not None:
+            logger.info(f"Ignoring {request.url}, already exists.")
+            raise IgnoreRequest
         return None
 
     def process_response(self, request, response, spider):
@@ -101,3 +120,4 @@ class ScrapperDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)
+

@@ -2,6 +2,7 @@ import playwright.async_api
 import scrapy
 from scrapy_playwright.page import PageMethod
 
+from ..item_loaders import RecordLoader
 from ..items import RecordItem
 
 
@@ -37,24 +38,25 @@ class RecordsSpider(scrapy.Spider):
                     )
 
     def parse_item(self, response: scrapy.http.Response):
-        item = RecordItem()
-        item['name'] = response.css('h1[data-testid="productName"]::text').get()
+        loader = RecordLoader(item=RecordItem(), response=response)
+        loader.add_value("url", response.url)
+        loader.add_css('name', 'h1[data-testid="productName"]::text')
 
         prices = response.css('div.flex.flex-row.gap-2.w-full.font-semibold.text-md>div:nth-child(2)::text').getall()
-        item["cd_usd_price"] = prices[0]
-        item["vinyl_usd_price"] = prices[1]
+        loader.add_value("cd_usd_price", prices[0])
+        loader.add_value("vinyl_usd_price", prices[1])
 
         attributes = []
         for attribute in response.css('div[class="grid grid-cols-2"]>div:nth-child(even)'):
             text_of_attribute = ' '.join(attribute.css("p::text").getall())
             attributes.append(text_of_attribute)
 
-        item["release_type"] = attributes[0]
-        item["artist"] = attributes[1]
-        item["artist_page"] = attributes[2]
-        item["genre"] = attributes[3]
-        item["release_year"] = attributes[4]
-        item["label"] = attributes[5]
-        item["country"] = attributes[6]
+        loader.add_value("release_type", attributes[0])
+        loader.add_value("artist", attributes[1])
+        loader.add_value("artist_page", attributes[2])
+        loader.add_value("genre", attributes[3])
+        loader.add_value("release_year", attributes[4])
+        loader.add_value("label", attributes[5])
+        loader.add_value("country", attributes[6])
 
-        return item
+        return loader.load_item()
