@@ -14,10 +14,11 @@ services:
   scrapper:
     build:
       context: scrapper
-    volumes:
-      - ./scrapper:/home/app/Scrapper
+    restart: unless-stopped
     depends_on:
       - db
+    env_file:
+      - .env
 
 volumes:
   db_volume:
