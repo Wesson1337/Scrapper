@@ -20,5 +20,18 @@ services:
     env_file:
       - .env
 
+  backend:
+    build:
+      context: backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    command: uvicorn src.main:app --reload --host 0.0.0.0
+    depends_on:
+      - db
+      - scrapper
+    env_file:
+      - .env
+
 volumes:
   db_volume:
