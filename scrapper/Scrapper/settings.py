@@ -111,3 +111,10 @@ DB_DIALECT = "postgresql"
 DB_DRIVER = "psycopg2"
 
 DB_URL = f"{DB_DIALECT}+{DB_DRIVER}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+
+def should_abort_request(request):
+    return request.resource_type == "image"
+
+
+PLAYWRIGHT_ABORT_REQUEST = should_abort_request
