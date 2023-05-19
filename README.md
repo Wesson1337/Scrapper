@@ -7,7 +7,7 @@ It's an example of dockerized dynamic site (reactstorefront.vercel.app) web-scra
 ## Intstallation
 1. Copy project - 
     ```commandline
-    git clone https://github.com/Wesson1337/Scrapper
+    git clone https://github.com/Wesson1337/Scrapper.git
     ```
 3. Istall docker - https://docs.docker.com/engine/install/
 4. Set up env variables (check environment variables paragraph).
